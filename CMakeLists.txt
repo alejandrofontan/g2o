@@ -11,7 +11,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3  REQUIRED NO_MODULE)
 
-configure_file(config.h.in "${PROJECT_SOURCE_DIR}/g2o/config.h")
+configure_file(config.h.in "${PROJECT_SOURCE_DIR}/config.h")
 
 # Include the subdirectories
 add_library(${PROJECT_NAME} SHARED
@@ -128,7 +128,7 @@ install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake"
 
 # Specify installation rules
 
-install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${INCLUDES_DESTINATION}/g2o)
+install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION ${INCLUDES_DESTINATION}/g2o)
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION  ${CMAKE_INSTALL_PREFIX}/bin
