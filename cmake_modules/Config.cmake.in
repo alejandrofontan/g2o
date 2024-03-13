@@ -1,6 +1,10 @@
-include(CMakeFindDependencyMacro)
-
-find_dependency(Eigen3)
-find_dependency(OpenGL)
-
-include("${CMAKE_CURRENT_LIST_DIR}/@G2O_TARGETS_EXPORT_NAME@.cmake")
+FIND_LIBRARY(g2o_LIBRARY g2o
+    PATHS "@CMAKE_INSTALL_PREFIX@/lib"
+)
+FIND_PATH(g2o_INCLUDE_DIR g2o.h
+    PATHS "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME@" 
+)
+LIST(APPEND g2o_INCLUDE_DIR ${g2o_INCLUDE_DIR}/../)
+SET(g2o_LIBRARIES ${g2o_LIBRARY})
+SET(g2o_LIBS ${g2o_LIBRARY})
+SET(g2o_INCLUDE_DIRS ${g2o_INCLUDE_DIR})
