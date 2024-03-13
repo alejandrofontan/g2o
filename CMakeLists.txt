@@ -27,7 +27,7 @@ find_package(Eigen3  REQUIRED NO_MODULE)
 
 # Generate config.h
 configure_file(config.h.in ${g2o_SOURCE_DIR}/config.h)
-
+  
 # Set up the top-level include directories
 include_directories(
 g2o/core
@@ -137,8 +137,8 @@ install(DIRECTORY g2o/core DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 install(DIRECTORY g2o/types DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 install(DIRECTORY g2o/stuff DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/g2oConfig.cmake"
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
-install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake" 
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DBoW2/)
+#install(FILES "${CMAKE_CURRENT_BINARY_DIR}/g2oConfig.cmake"
+#  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+#install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake" 
+#  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DBoW2/)
 
