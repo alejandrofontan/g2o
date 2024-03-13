@@ -110,7 +110,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 configure_file(config.h.in "${PROJECT_BINARY_DIR}/g2o/config.h")
-install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o)
 
 # Specify installation rules
 install(TARGETS ${PROJECT_NAME}
