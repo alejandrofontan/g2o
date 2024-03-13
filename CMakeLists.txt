@@ -130,7 +130,7 @@ Eigen3::Eigen
 )
 
 
-configure_file(config.h.in ${g2o_SOURCE_DIR}/config.h)
+configure_file(config.h.in "g2o/config.h")
 install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/g2o)
 
 configure_file("cmake_modules/Config.cmake.in" "${PROJECT_BINARY_DIR}/Config.cmake" @ONLY)
