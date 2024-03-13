@@ -117,12 +117,13 @@ target_link_libraries(${PROJECT_NAME}
 include(CMakePackageConfigHelpers)
 set(G2O_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(G2O_VERSION_CONFIG "${G2O_GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set(G2O_PROJECT_CONFIG "${G2O_GENERATED_DIR}/${PROJECT_NAME}Config.cmake")
 
 WRITE_BASIC_PACKAGE_VERSION_FILE(
     "${G2O_VERSION_CONFIG}" VERSION ${G2O_VERSION} COMPATIBILITY SameMajorVersion
 )
 
-configure_file("cmake_modules/Config.cmake.in" "${G2O_PROJECT_CONFIG}" @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/cmake_modules/Config.cmake.in" "${G2O_PROJECT_CONFIG}" @ONLY)
 
 install(
     FILES "${G2O_PROJECT_CONFIG}" "${G2O_VERSION_CONFIG}"
