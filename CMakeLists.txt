@@ -128,7 +128,7 @@ install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake"
 
 # Specify installation rules
 message(STATUS )
-install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION ${INCLUDES_DESTINATION}/)
+install(FILES ${PROJECT_BINARY_DIR}/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o)
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION  ${CMAKE_INSTALL_PREFIX}/bin
