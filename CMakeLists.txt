@@ -11,7 +11,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3  REQUIRED NO_MODULE)
 
-configure_file(config.h.in "${PROJECT_SOURCE_DIR}/config.h")
+configure_file(config.h.in "${PROJECT_SOURCE_DIR}/g2o/config.h")
 
 # Include the subdirectories
 add_library(${PROJECT_NAME} SHARED
@@ -100,11 +100,11 @@ g2o/stuff/string_tools.cpp
 g2o/stuff/property.cpp       
 g2o/stuff/property.h   
 
-config.h   
 )
 
 # Set up the top-level include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
+	g2o/
 	g2o/core
 	g2o/types
 	g2o/stuff
@@ -127,13 +127,19 @@ install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake"
 
 
 # Specify installation rules
+
+install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${INCLUDES_DESTINATION}/g2o)
+
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION  ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION  ${CMAKE_INSTALL_PREFIX}/lib
         ARCHIVE DESTINATION  ${CMAKE_INSTALL_PREFIX}/lib)
 
-install(DIRECTORY g2o/core 
-                  g2o/types 
-                  g2o/stuff
+install(DIRECTORY
+	g2o/
+	g2o/core 
+	g2o/types 
+	g2o/stuff
+	
         DESTINATION  ${CMAKE_INSTALL_PREFIX}/include/g2o
         FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
