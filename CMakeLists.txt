@@ -109,6 +109,9 @@ target_link_libraries(${PROJECT_NAME}
         Eigen3::Eigen 
 )
 
+configure_file(config.h.in "${PROJECT_BINARY_DIR}/g2o/config.h")
+install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
 # Specify installation rules
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION  ${CMAKE_INSTALL_PREFIX}/bin
