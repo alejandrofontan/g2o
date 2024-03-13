@@ -10,6 +10,8 @@ set (CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3  REQUIRED NO_MODULE)
 
+configure_file(config.h.in "${PROJECT_SOURCE_DIR}/config.h")
+
 # Include the subdirectories
 add_library(${PROJECT_NAME} SHARED
 #types
@@ -95,7 +97,9 @@ g2o/stuff/os_specific.c
 g2o/stuff/os_specific.h
 g2o/stuff/string_tools.cpp
 g2o/stuff/property.cpp       
-g2o/stuff/property.h       
+g2o/stuff/property.h   
+
+config.h   
 )
 
 # Set up the top-level include directories
@@ -109,8 +113,7 @@ target_link_libraries(${PROJECT_NAME}
         Eigen3::Eigen 
 )
 
-configure_file(config.h.in "${PROJECT_BINARY_DIR}/g2o/config.h")
-install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o)
+
 
 # Specify installation rules
 install(TARGETS ${PROJECT_NAME}
