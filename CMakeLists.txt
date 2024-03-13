@@ -1,5 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
+set(G2O_VERSION 1.0.0)
 
 PROJECT(g2o)
 
@@ -113,6 +114,19 @@ target_link_libraries(${PROJECT_NAME}
         Eigen3::Eigen 
 )
 
+include(CMakePackageConfigHelpers)
+set(G2O_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(G2O_VERSION_CONFIG "${G2O_GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+
+WRITE_BASIC_PACKAGE_VERSION_FILE(
+    "${G2O_VERSION_CONFIG}" VERSION ${G2O_VERSION} COMPATIBILITY SameMajorVersion
+)
+
+configure_file("cmake_modules/Config.cmake.in" "${G2O_PROJECT_CONFIG}" @ONLY)
+
+install(
+    FILES "${G2O_PROJECT_CONFIG}" "${G2O_VERSION_CONFIG}"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake")
 
 
 # Specify installation rules
