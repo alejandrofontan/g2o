@@ -3,59 +3,17 @@ SET(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 PROJECT(g2o)
 
-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
 set (CMAKE_CXX_STANDARD 17)
 
-SET(g2o_C_FLAGS)
-SET(g2o_CXX_FLAGS)
 
-# default built type
-IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
-ENDIF()
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+    "MinSizeRel" "RelWithDebInfo")
+endif()
 
-MESSAGE(STATUS "BUILD TYPE:" ${CMAKE_BUILD_TYPE})
-
-SET (G2O_LIB_TYPE SHARED)
-
-# There seems to be an issue with MSVC8
-# see http://eigen.tuxfamily.org/bz/show_bug.cgi?id=83
-if(MSVC90)
-  add_definitions(-DEIGEN_DONT_ALIGN_STATICALLY=1)
-  message(STATUS "Disabling memory alignment for MSVC8")
-endif(MSVC90)
-
-# Set the output directory for the build executables and libraries
-IF(WIN32)
-  SET(g2o_LIBRARY_OUTPUT_DIRECTORY ${g2o_SOURCE_DIR}/bin CACHE PATH "Target for the libraries")
-ELSE(WIN32)
-  SET(g2o_LIBRARY_OUTPUT_DIRECTORY ${g2o_SOURCE_DIR}/lib CACHE PATH "Target for the libraries")
-ENDIF(WIN32)
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${g2o_LIBRARY_OUTPUT_DIRECTORY})
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${g2o_LIBRARY_OUTPUT_DIRECTORY})
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${g2o_RUNTIME_OUTPUT_DIRECTORY})
-
-# Set standard installation directories
-set(RUNTIME_DESTINATION ${CMAKE_INSTALL_BINDIR})
-set(LIBRARY_DESTINATION ${CMAKE_INSTALL_LIBDIR})
-set(ARCHIVE_DESTINATION ${CMAKE_INSTALL_LIBDIR})
-set(INCLUDES_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-set(INCLUDES_INSTALL_DIR ${INCLUDES_DESTINATION}/g2o)
-
-# Set search directory for looking for our custom CMake scripts to
-# look for SuiteSparse, QGLViewer, and Eigen3.
-LIST(APPEND CMAKE_MODULE_PATH ${g2o_SOURCE_DIR}/cmake_modules)
-
-# Detect OS and define macros appropriately
-IF(UNIX)
-  ADD_DEFINITIONS(-DUNIX)
-  MESSAGE(STATUS "Compiling on Unix")
-ENDIF(UNIX)
-
-# Eigen library parallelise itself, though, presumably due to performance issues
-# OPENMP is experimental. We experienced some slowdown with it
 FIND_PACKAGE(OpenMP)
 SET(G2O_USE_OPENMP OFF CACHE BOOL "Build g2o with OpenMP support (EXPERIMENTAL)")
 IF(OPENMP_FOUND AND G2O_USE_OPENMP)
@@ -65,53 +23,20 @@ IF(OPENMP_FOUND AND G2O_USE_OPENMP)
   MESSAGE(STATUS "Compiling with OpenMP support")
 ENDIF(OPENMP_FOUND AND G2O_USE_OPENMP)
 
-# Compiler specific options for gcc
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native") 
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native") 
-
-# activate warnings !!!
-SET(g2o_C_FLAGS "${g2o_C_FLAGS} -Wall -W")
-SET(g2o_CXX_FLAGS "${g2o_CXX_FLAGS} -Wall -W")
-
-# specifying compiler flags
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${g2o_CXX_FLAGS}")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${g2o_C_FLAGS}")
-
-# Find Eigen3
-SET(EIGEN3_INCLUDE_DIR ${G2O_EIGEN3_INCLUDE})
 find_package(Eigen3  REQUIRED NO_MODULE)
-IF(EIGEN3_FOUND)
-  SET(G2O_EIGEN3_INCLUDE ${EIGEN3_INCLUDE_DIR} CACHE PATH "Directory of Eigen3")
-ELSE(EIGEN3_FOUND)
-  SET(G2O_EIGEN3_INCLUDE "" CACHE PATH "Directory of Eigen3")
-ENDIF(EIGEN3_FOUND)
 
 # Generate config.h
-#set(G2O_OPENGL_FOUND ${OPENGL_FOUND})
-#set(G2O_HAVE_CHOLMOD ${CHOLMOD_FOUND})
-#set(G2O_HAVE_CSPARSE ${G2O_USE_CSPARSE})
-#set(G2O_SHARED_LIBS ${BUILD_SHARED_LIBS})
-#set(G2O_LGPL_SHARED_LIBS ${BUILD_LGPL_SHARED_LIBS})
-set(G2O_CXX_COMPILER "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER}")
-
-# Generate cmake configuration scripts
-set(G2O_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(G2O_VERSION_CONFIG "${G2O_GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
-set(G2O_PROJECT_CONFIG "${G2O_GENERATED_DIR}/${PROJECT_NAME}Config.cmake")
-set(G2O_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
-set(G2O_CONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
-set(G2O_NAMESPACE "${PROJECT_NAME}::")
-set(G2O_SRC_DIR "${PROJECT_SOURCE_DIR}")
+configure_file(config.h.in ${g2o_SOURCE_DIR}/config.h)
 
 # Set up the top-level include directories
-INCLUDE_DIRECTORIES(
-${g2o_SOURCE_DIR}/core
-${g2o_SOURCE_DIR}/types
-${g2o_SOURCE_DIR}/stuff 
-${G2O_EIGEN3_INCLUDE})
+include_directories(
+g2o/core
+g2o/types
+g2o/stuff 
+)
 
 # Include the subdirectories
-ADD_LIBRARY(g2o ${G2O_LIB_TYPE}
+add_library(g2o SHARED
 #types
 g2o/types/types_sba.h
 g2o/types/types_six_dof_expmap.h
@@ -198,19 +123,11 @@ g2o/stuff/property.cpp
 g2o/stuff/property.h       
 )
 
-
-
-configure_file(config.h.in "${PROJECT_BINARY_DIR}/g2o/config.h")
-install(FILES ${PROJECT_BINARY_DIR}/g2o/config.h DESTINATION ${INCLUDES_DESTINATION}/g2o)
-
-configure_file("${g2o_SOURCE_DIR}/cmake_modules/Config.cmake.in" "${G2O_PROJECT_CONFIG}" @ONLY)
-configure_file("${g2o_SOURCE_DIR}/script/codecov.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/codecov.sh" @ONLY)
-
-install(
-    FILES "${G2O_PROJECT_CONFIG}" "${G2O_VERSION_CONFIG}"
-    DESTINATION "${G2O_CONFIG_INSTALL_DIR}")
-
-install(
-    EXPORT "${G2O_TARGETS_EXPORT_NAME}"
-    NAMESPACE "${G2O_NAMESPACE}"
-    DESTINATION "${G2O_CONFIG_INSTALL_DIR}")
+target_include_directories(${PROJECT_NAME} PUBLIC 
+g2o/core
+g2o/types
+g2o/stuff 
+)
+target_link_libraries(${PROJECT_NAME} 
+Eigen3::Eigen
+)
