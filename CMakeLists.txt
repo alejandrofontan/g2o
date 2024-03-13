@@ -131,3 +131,14 @@ g2o/stuff
 target_link_libraries(${PROJECT_NAME} 
 Eigen3::Eigen
 )
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(DIRECTORY g2o/core DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY g2o/types DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY g2o/stuff DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/g2oConfig.cmake"
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake" 
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DBoW2/)
+
