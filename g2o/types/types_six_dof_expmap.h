@@ -140,6 +140,44 @@ public:
   double fx, fy, cx, cy, bf;
 };
 
+
+// Added: binary edge (point + pose) for RGB-D observations that carry real sensor depth.
+// Unlike EdgeStereoSE3ProjectXYZ (whose 3rd channel is a synthetic stereo disparity
+// u - bf/z), this edge's 3rd channel is inverse depth (1/z) directly -- no bf. Binary
+// counterpart of EdgeRGBDSE3ProjectXYZOnlyPose, for BundleAdjustment/LocalBundleAdjustment
+// where the map point is also optimized (not just the pose).
+class  EdgeRGBDSE3ProjectXYZ: public  BaseBinaryEdge<3, Vector3d, VertexSBAPointXYZ, VertexSE3Expmap>{
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  EdgeRGBDSE3ProjectXYZ();
+
+  bool read(std::istream& is);
+
+  bool write(std::ostream& os) const;
+
+  void computeError()  {
+    const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[1]);
+    const VertexSBAPointXYZ* v2 = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
+    Vector3d obs(_measurement);
+    _error = obs - cam_project(v1->estimate().map(v2->estimate()));
+  }
+
+  bool isDepthPositive() {
+    const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[1]);
+    const VertexSBAPointXYZ* v2 = static_cast<const VertexSBAPointXYZ*>(_vertices[0]);
+    return (v1->estimate().map(v2->estimate()))(2)>0.0;
+  }
+
+
+  virtual void linearizeOplus();
+
+  // Returns (u, v, inverse depth) -- measurement/observation must be (u, v, invDepth) too.
+  Vector3d cam_project(const Vector3d & trans_xyz) const;
+
+  double fx, fy, cx, cy;
+};
+
 class  EdgeSE3ProjectXYZOnlyPose: public  BaseUnaryEdge<2, Vector2d, VertexSE3Expmap>{
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -199,6 +237,41 @@ public:
 
   Vector3d Xw;
   double fx, fy, cx, cy, bf;
+};
+
+
+// Added: unary pose-only edge for RGB-D observations that carry real sensor depth.
+// Unlike EdgeStereoSE3ProjectXYZOnlyPose (whose 3rd channel is a synthetic stereo
+// disparity u - bf/z), this edge's 3rd channel is inverse depth (1/z) directly -- no bf.
+class  EdgeRGBDSE3ProjectXYZOnlyPose: public  BaseUnaryEdge<3, Vector3d, VertexSE3Expmap>{
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  EdgeRGBDSE3ProjectXYZOnlyPose(){}
+
+  bool read(std::istream& is);
+
+  bool write(std::ostream& os) const;
+
+  void computeError()  {
+    const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
+    Vector3d obs(_measurement);
+    _error = obs - cam_project(v1->estimate().map(Xw));
+  }
+
+  bool isDepthPositive() {
+    const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
+    return (v1->estimate().map(Xw))(2)>0.0;
+  }
+
+
+  virtual void linearizeOplus();
+
+  // Returns (u, v, inverse depth) -- measurement/observation must be (u, v, invDepth) too.
+  Vector3d cam_project(const Vector3d & trans_xyz) const;
+
+  Vector3d Xw;
+  double fx, fy, cx, cy;
 };
 
 

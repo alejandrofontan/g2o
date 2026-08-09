@@ -325,18 +325,18 @@ namespace g2o {
   SparseBlockMatrix<MatrixType>*  SparseBlockMatrix<MatrixType>::slice(int rmin, int rmax, int cmin, int cmax, bool alloc) const {
     int m=rmax-rmin;
     int n=cmax-cmin;
-    int rowIdx [m];
+    std::vector<int> rowIdx(m);
     rowIdx[0] = rowsOfBlock(rmin);
     for (int i=1; i<m; ++i){
       rowIdx[i]=rowIdx[i-1]+rowsOfBlock(rmin+i);
     }
 
-    int colIdx [n];
+    std::vector<int> colIdx(n);
     colIdx[0] = colsOfBlock(cmin);
     for (int i=1; i<n; ++i){
       colIdx[i]=colIdx[i-1]+colsOfBlock(cmin+i);
     }
-    typename SparseBlockMatrix<MatrixType>::SparseBlockMatrix* s=new SparseBlockMatrix(rowIdx, colIdx, m, n, true);
+    typename SparseBlockMatrix<MatrixType>::SparseBlockMatrix* s=new SparseBlockMatrix(rowIdx.data(), colIdx.data(), m, n, true);
     for (int i=0; i<n; ++i){
       int mc=cmin+i;
       for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[mc].begin(); it!=_blockCols[mc].end(); ++it){
@@ -401,13 +401,13 @@ namespace g2o {
     // compute the permuted version of the new row/column layout
     size_t n=_rowBlockIndices.size();
     // computed the block sizes
-    int blockSizes[_rowBlockIndices.size()];
+    std::vector<int> blockSizes(_rowBlockIndices.size());
     blockSizes[0]=_rowBlockIndices[0];
     for (size_t i=1; i<n; ++i){
       blockSizes[i]=_rowBlockIndices[i]-_rowBlockIndices[i-1];
     }
     // permute them
-    int pBlockIndices[_rowBlockIndices.size()];
+    std::vector<int> pBlockIndices(_rowBlockIndices.size());
     for (size_t i=0; i<n; ++i){
       pBlockIndices[pinv[i]]=blockSizes[i];
     }
@@ -416,7 +416,7 @@ namespace g2o {
     }
     // allocate C, or check the structure;
     if (! dest){
-      dest=new SparseBlockMatrix(pBlockIndices, pBlockIndices, n, n);
+      dest=new SparseBlockMatrix(pBlockIndices.data(), pBlockIndices.data(), n, n);
     } else {
       if (dest->_rowBlockIndices.size()!=n)
         return false;

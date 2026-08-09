@@ -56,8 +56,12 @@ namespace g2o {
       typedef typename BaseEdge<D,E>::ErrorVector ErrorVector;
       typedef typename BaseEdge<D,E>::InformationType InformationType;
 
-      typedef Eigen::Map<Matrix<double, Di, Dj>, Matrix<double, Di, Dj>::Flags & AlignedBit ? Aligned : Unaligned > HessianBlockType;
-      typedef Eigen::Map<Matrix<double, Dj, Di>, Matrix<double, Dj, Di>::Flags & AlignedBit ? Aligned : Unaligned > HessianBlockTransposedType;
+      // Was conditioned on the now-deprecated Eigen::AlignedBit flag (Aligned if the matrix
+      // type happened to guarantee it, Unaligned otherwise). Unaligned is always valid for any
+      // alignment, so hardcoding it here is a pure warning fix -- correctness-neutral, at most
+      // a possible (usually negligible) missed-SIMD-alignment micro-optimization.
+      typedef Eigen::Map<Matrix<double, Di, Dj>, Unaligned > HessianBlockType;
+      typedef Eigen::Map<Matrix<double, Dj, Di>, Unaligned > HessianBlockTransposedType;
 
       BaseBinaryEdge() : BaseEdge<D,E>(),
       _hessianRowMajor(false),

@@ -234,6 +234,103 @@ void EdgeStereoSE3ProjectXYZ::linearizeOplus() {
 }
 
 
+// Added: EdgeRGBDSE3ProjectXYZ
+
+Vector3d EdgeRGBDSE3ProjectXYZ::cam_project(const Vector3d & trans_xyz) const{
+  const float invz = 1.0f/trans_xyz[2];
+  Vector3d res;
+  res[0] = trans_xyz[0]*invz*fx + cx;
+  res[1] = trans_xyz[1]*invz*fy + cy;
+  res[2] = invz;   // inverse depth, not synthetic disparity -- no bf
+  return res;
+}
+
+EdgeRGBDSE3ProjectXYZ::EdgeRGBDSE3ProjectXYZ() : BaseBinaryEdge<3, Vector3d, VertexSBAPointXYZ, VertexSE3Expmap>() {
+}
+
+bool EdgeRGBDSE3ProjectXYZ::read(std::istream& is){
+  for (int i=0; i<3; i++){
+    is >> _measurement[i];
+  }
+  for (int i=0; i<=2; i++)
+    for (int j=i; j<=2; j++) {
+      is >> information()(i,j);
+      if (i!=j)
+        information()(j,i)=information()(i,j);
+    }
+  return true;
+}
+
+bool EdgeRGBDSE3ProjectXYZ::write(std::ostream& os) const {
+
+  for (int i=0; i<3; i++){
+    os << measurement()[i] << " ";
+  }
+
+  for (int i=0; i<=2; i++)
+    for (int j=i; j<=2; j++){
+      os << " " <<  information()(i,j);
+    }
+  return os.good();
+}
+
+void EdgeRGBDSE3ProjectXYZ::linearizeOplus() {
+  VertexSE3Expmap * vj = static_cast<VertexSE3Expmap *>(_vertices[1]);
+  SE3Quat T(vj->estimate());
+  VertexSBAPointXYZ* vi = static_cast<VertexSBAPointXYZ*>(_vertices[0]);
+  Vector3d xyz = vi->estimate();
+  Vector3d xyz_trans = T.map(xyz);
+
+  const Matrix3d R = T.rotation().toRotationMatrix();
+
+  double x = xyz_trans[0];
+  double y = xyz_trans[1];
+  double z = xyz_trans[2];
+  double invz = 1.0/z;
+  double invz_2 = invz*invz;
+
+  // d(u,v)/d(point X, world frame): identical pixel-projection derivative to
+  // EdgeStereoSE3ProjectXYZ's rows 0-1, unaffected by the depth-channel choice.
+  _jacobianOplusXi(0,0) = -fx*R(0,0)*invz+fx*x*R(2,0)*invz_2;
+  _jacobianOplusXi(0,1) = -fx*R(0,1)*invz+fx*x*R(2,1)*invz_2;
+  _jacobianOplusXi(0,2) = -fx*R(0,2)*invz+fx*x*R(2,2)*invz_2;
+
+  _jacobianOplusXi(1,0) = -fy*R(1,0)*invz+fy*y*R(2,0)*invz_2;
+  _jacobianOplusXi(1,1) = -fy*R(1,1)*invz+fy*y*R(2,1)*invz_2;
+  _jacobianOplusXi(1,2) = -fy*R(1,2)*invz+fy*y*R(2,2)*invz_2;
+
+  // Depth channel: error_z = invDepth_obs - 1/z_trans. z_trans is linear in X
+  // (z_trans = R.row(2).X + t_2), so d(z_trans)/dX = R.row(2) directly, and
+  // d(1/z_trans)/dX = -invz^2 * R.row(2).
+  _jacobianOplusXi(2,0) = invz_2*R(2,0);
+  _jacobianOplusXi(2,1) = invz_2*R(2,1);
+  _jacobianOplusXi(2,2) = invz_2*R(2,2);
+
+  _jacobianOplusXj(0,0) =  x*y*invz_2 *fx;
+  _jacobianOplusXj(0,1) = -(1+(x*x*invz_2)) *fx;
+  _jacobianOplusXj(0,2) = y*invz *fx;
+  _jacobianOplusXj(0,3) = -invz *fx;
+  _jacobianOplusXj(0,4) = 0;
+  _jacobianOplusXj(0,5) = x*invz_2 *fx;
+
+  _jacobianOplusXj(1,0) = (1+y*y*invz_2) *fy;
+  _jacobianOplusXj(1,1) = -x*y*invz_2 *fy;
+  _jacobianOplusXj(1,2) = -x*invz *fy;
+  _jacobianOplusXj(1,3) = 0;
+  _jacobianOplusXj(1,4) = -invz *fy;
+  _jacobianOplusXj(1,5) = y*invz_2 *fy;
+
+  // Depth channel w.r.t. pose: same closed form derived for
+  // EdgeRGBDSE3ProjectXYZOnlyPose::linearizeOplus's row 2.
+  _jacobianOplusXj(2,0) = y*invz_2;
+  _jacobianOplusXj(2,1) = -x*invz_2;
+  _jacobianOplusXj(2,2) = 0;
+  _jacobianOplusXj(2,3) = 0;
+  _jacobianOplusXj(2,4) = 0;
+  _jacobianOplusXj(2,5) = invz_2;
+}
+
+
 //Only Pose
 
 bool EdgeSE3ProjectXYZOnlyPose::read(std::istream& is){
@@ -361,6 +458,79 @@ void EdgeStereoSE3ProjectXYZOnlyPose::linearizeOplus() {
   _jacobianOplusXi(2,3) = _jacobianOplusXi(0,3);
   _jacobianOplusXi(2,4) = 0;
   _jacobianOplusXi(2,5) = _jacobianOplusXi(0,5)-bf*invz_2;
+}
+
+
+// Added: EdgeRGBDSE3ProjectXYZOnlyPose
+
+Vector3d EdgeRGBDSE3ProjectXYZOnlyPose::cam_project(const Vector3d & trans_xyz) const{
+  const float invz = 1.0f/trans_xyz[2];
+  Vector3d res;
+  res[0] = trans_xyz[0]*invz*fx + cx;
+  res[1] = trans_xyz[1]*invz*fy + cy;
+  res[2] = invz;   // inverse depth, not synthetic disparity -- no bf
+  return res;
+}
+
+
+bool EdgeRGBDSE3ProjectXYZOnlyPose::read(std::istream& is){
+  for (int i=0; i<3; i++){
+    is >> _measurement[i];
+  }
+  for (int i=0; i<=2; i++)
+    for (int j=i; j<=2; j++) {
+      is >> information()(i,j);
+      if (i!=j)
+        information()(j,i)=information()(i,j);
+    }
+  return true;
+}
+
+bool EdgeRGBDSE3ProjectXYZOnlyPose::write(std::ostream& os) const {
+
+  for (int i=0; i<3; i++){
+    os << measurement()[i] << " ";
+  }
+
+  for (int i=0; i<=2; i++)
+    for (int j=i; j<=2; j++){
+      os << " " <<  information()(i,j);
+    }
+  return os.good();
+}
+
+void EdgeRGBDSE3ProjectXYZOnlyPose::linearizeOplus() {
+  VertexSE3Expmap * vi = static_cast<VertexSE3Expmap *>(_vertices[0]);
+  Vector3d xyz_trans = vi->estimate().map(Xw);
+
+  double x = xyz_trans[0];
+  double y = xyz_trans[1];
+  double invz = 1.0/xyz_trans[2];
+  double invz_2 = invz*invz;
+
+  _jacobianOplusXi(0,0) =  x*y*invz_2 *fx;
+  _jacobianOplusXi(0,1) = -(1+(x*x*invz_2)) *fx;
+  _jacobianOplusXi(0,2) = y*invz *fx;
+  _jacobianOplusXi(0,3) = -invz *fx;
+  _jacobianOplusXi(0,4) = 0;
+  _jacobianOplusXi(0,5) = x*invz_2 *fx;
+
+  _jacobianOplusXi(1,0) = (1+y*y*invz_2) *fy;
+  _jacobianOplusXi(1,1) = -x*y*invz_2 *fy;
+  _jacobianOplusXi(1,2) = -x*invz *fy;
+  _jacobianOplusXi(1,3) = 0;
+  _jacobianOplusXi(1,4) = -invz *fy;
+  _jacobianOplusXi(1,5) = y*invz_2 *fy;
+
+  // Depth channel: error_z = invDepth_obs - 1/z_proj. d(1/z)/d(pose) = -1/z^2 * d(z)/d(pose),
+  // and d(z)/d(omega) = (y,-x,0), d(z)/d(upsilon) = (0,0,1) (standard SE3 point Jacobian) --
+  // so, same sign convention as rows 0-1 above (error = obs - projection):
+  _jacobianOplusXi(2,0) = y*invz_2;
+  _jacobianOplusXi(2,1) = -x*invz_2;
+  _jacobianOplusXi(2,2) = 0;
+  _jacobianOplusXi(2,3) = 0;
+  _jacobianOplusXi(2,4) = 0;
+  _jacobianOplusXi(2,5) = invz_2;
 }
 
 

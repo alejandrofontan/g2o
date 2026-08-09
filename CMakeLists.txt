@@ -150,6 +150,7 @@ add_library(${PROJECT_NAME} SHARED ${SRCS_TYPES_G2O} ${SRCS_CORE_G2O} ${SRCS_STU
 
 # Set up the top-level include directories
 target_include_directories(${PROJECT_NAME} PUBLIC
+	${PROJECT_SOURCE_DIR}
 	g2o/
 	g2o/core
 	g2o/types
