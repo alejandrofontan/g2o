@@ -131,7 +131,13 @@ namespace g2o {
       scale += 1e-3; // make sure it's non-zero :)
       rho /=  scale;
 
-      if (rho>0 && g2o_isfinite(tempChi)){ // last step was good
+      // tempChi < currentChi is required explicitly: rho>0 alone also passes when BOTH the
+      // numerator (currentChi-tempChi) and computeScale() are negative — computeScale's
+      // lambda*||x||^2 + x^T b is only guaranteed positive for a well-posed solve, and a
+      // degenerate/ill-conditioned step (observed with mixed-information RGB-D pose
+      // optimization: pixel info ~1 vs inverse-depth info ~1e5) could get a cost-INCREASING
+      // wild step accepted, walking the estimate out of a converged basin.
+      if (rho>0 && g2o_isfinite(tempChi) && tempChi < currentChi){ // last step was good
         double alpha = 1.-pow((2*rho-1),3);
         // crop lambda between minimum and maximum factors
         alpha = (std::min)(alpha, _goodStepUpperScale);
