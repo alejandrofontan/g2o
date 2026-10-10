@@ -13,8 +13,15 @@ set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native -W")
 set(CMAKE_CXX_STANDARD 17)
 
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native") 
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native") 
+# -march=native only for a standalone build: as a subproject g2o inherits the parent's architecture flags, since
+# Eigen code compiled for different targets in one process breaks alignment assumptions.
+if(PROJECT_IS_TOP_LEVEL)
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native")
+else()
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+endif()
 set(CMAKE_CXX_STANDARD_RELEASE 17)
 
 SET(g2o_C_FLAGS "${g2o_C_FLAGS} -Wall -W")
@@ -166,16 +173,16 @@ configure_file(${PROJECT_SOURCE_DIR}/cmake_modules/g2oConfig.cmake.in
   "${PROJECT_BINARY_DIR}/g2oConfig.cmake" @ONLY)
   
 install(FILES "${PROJECT_BINARY_DIR}/g2oConfig.cmake" 
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}/)
+  DESTINATION lib/cmake/${PROJECT_NAME}/)
 
 # Specify installation rules
-install(FILES "${PROJECT_SOURCE_DIR}/g2o/config.h" DESTINATION ${CMAKE_INSTALL_PREFIX}/include/g2o)
+install(FILES "${PROJECT_SOURCE_DIR}/g2o/config.h" DESTINATION include/g2o)
 
 
 install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION  ${CMAKE_INSTALL_PREFIX}/bin
-        LIBRARY DESTINATION  ${CMAKE_INSTALL_PREFIX}/lib
-        ARCHIVE DESTINATION  ${CMAKE_INSTALL_PREFIX}/lib)
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
 
 install(DIRECTORY
 	g2o/
@@ -183,5 +190,5 @@ install(DIRECTORY
 	g2o/types 
 	g2o/stuff
 	
-        DESTINATION  ${CMAKE_INSTALL_PREFIX}/include/g2o
+        DESTINATION include/g2o
         FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
