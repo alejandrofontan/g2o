@@ -1,90 +1,50 @@
+# Build check for this stripped g2o (the ORB-SLAM2 subset carried by AllFeature-VSLAM as a submodule): configure,
+# build and install the library on Linux and on Apple Silicon. There are no unit tests, examples or Qt viewers here,
+# so the upstream g2o workflow (unit tests, coverage, Windows/MSVC) does not apply.
 name: CI
 
 on:
   push:
-    branches:
-      - master
-      - pymem
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
-  release:
+permissions:
+  contents: read
 
 jobs:
   build:
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        config:
-        - {
-            name: "Ubuntu Latest GCC",
-            os: ubuntu-latest,
-            build_type: "Debug",
-            do_coverage: "ON",
-          }
-        - {
-            name: "macOS Latest Clang",
-            os: macos-latest,
-            build_type: "Debug",
-            do_coverage: "OFF",
-          }
-
+        include:
+          - { name: "Ubuntu GCC", os: ubuntu-latest }
+          - { name: "macOS arm64 clang", os: macos-15 }
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-            fetch-depth: 25
+      - uses: actions/checkout@v4
 
-      - name: Print env
-        run: |
-          echo github.ref: ${{github.ref}}
-          echo github.event.action: ${{github.event.action}}
-          echo github.event_name: ${{github.event_name}}
-          echo runner.os: ${{runner.os}}
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ matrix.config.os }}-${{ matrix.config.build_type }}
-          max-size: 2000M
-
-      - name: Install dependencies on Ubuntu
+      - name: Install Eigen (Ubuntu)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt update
-          sudo apt install libeigen3-dev qtdeclarative5-dev qt5-qmake libqglviewer-dev-qt5 libsuitesparse-dev lcov libspdlog-dev
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev ninja-build
 
-      - name: Install dependencies on macOS
+      - name: Install Eigen (macOS)
         if: runner.os == 'macOS'
-        run: brew install cmake eigen
+        run: brew install eigen ninja
 
-      - name: Configure ccache for macOS
-        if: runner.os == 'macOS'
-        run: |
-          # See https://github.com/hendrikmuhs/ccache-action/issues/146
-          ccache --set-config=compiler_check=content
-
-      - name: Configure CMake
-        run: |
-          cmake --version
-          cmake -B ${{github.workspace}}/build -DBUILD_UNITTESTS=ON -DBUILD_CODE_COVERAGE=${{matrix.config.do_coverage}} -DCMAKE_BUILD_TYPE=${{matrix.config.build_type}} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-
-      - name: Build Introspection
-        shell: bash
-        run: |
-          echo "g2o config.h"
-          cat ${{github.workspace}}/build/g2o/config.h
-          echo "ENV"
-          env | sort
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.config.build_type}} -j 2
+        run: cmake --build build --parallel 3
 
-      - name: Test
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{matrix.config.build_type}} --extra-verbose --output-on-failure
+      - name: Install
+        run: cmake --install build
 
-      - name: Coverage
-        if: matrix.config.do_coverage == 'ON'
-        run: bash ${{github.workspace}}/build/codecov.sh
+      - name: Installed files
+        shell: bash
+        run: |
+          ls install/lib
+          test -f install/lib/cmake/g2o/g2oConfig.cmake || ls -R install/lib/cmake
